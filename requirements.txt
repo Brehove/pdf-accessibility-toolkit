@@ -1,0 +1,5 @@
+mistralai
+pikepdf
+python-docx
+python-pptx
+python-dotenv

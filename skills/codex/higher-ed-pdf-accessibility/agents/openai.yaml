@@ -1,0 +1,4 @@
+interface:
+  display_name: "Higher-Ed PDF Accessibility"
+  short_description: "Convert higher-ed PDFs to accessible DOCX"
+  default_prompt: "Remediate these PDFs into accessible DOCX using the higher-ed OCR pipeline and summarize QA findings."

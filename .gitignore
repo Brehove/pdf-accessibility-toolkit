@@ -1,0 +1,23 @@
+# Environment
+.env
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
+
+# Generated conversion artifacts
+extracted_images/
+conversion_*/
+work/
+*_accessible.docx
+
+# Optional generated documents in repo root
+*.pdf
+*.docx
+*.pptx
