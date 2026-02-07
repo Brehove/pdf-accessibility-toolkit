@@ -65,6 +65,18 @@ uv run --with mistralai --with python-dotenv --with python-docx \
   python3 "$SKILL_DIR/scripts/md_to_accessible_docx.py" *.md --no-auto-alt
 ```
 
+Optional: preserve original OCR page boundaries:
+```bash
+uv run --with mistralai --with python-dotenv --with python-docx \
+  python3 "$SKILL_DIR/scripts/md_to_accessible_docx.py" *.md --preserve-page-breaks
+```
+
+Optional: disable first-page author side-by-side normalization:
+```bash
+uv run --with mistralai --with python-dotenv --with python-docx \
+  python3 "$SKILL_DIR/scripts/md_to_accessible_docx.py" *.md --no-author-grid
+```
+
 Optional: repair table headers in existing DOCX files:
 ```bash
 uv run --with python-docx \

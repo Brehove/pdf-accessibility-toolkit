@@ -49,6 +49,16 @@ python3 scripts/mistral_ocr_batch.py --input-dir work/input --output-dir work/ou
 python3 scripts/md_to_accessible_docx.py work/output/*.md
 ```
 
+Optional formatting controls:
+
+```bash
+# Preserve original OCR page boundaries in Word output
+python3 scripts/md_to_accessible_docx.py work/output/*.md --preserve-page-breaks
+
+# Disable first-page author side-by-side normalization
+python3 scripts/md_to_accessible_docx.py work/output/*.md --no-author-grid
+```
+
 ## Accessibility QA (Required)
 
 Automated conversion is not sufficient for publishing to students.

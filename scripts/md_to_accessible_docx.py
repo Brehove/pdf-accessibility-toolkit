@@ -16,6 +16,7 @@ Usage:
 """
 
 import argparse
+import math
 import re
 import os
 import base64
@@ -105,14 +106,14 @@ def clean_latex_notation(text):
     return text
 
 
-def fix_table_headers(doc):
+def fix_table_headers(tables):
     """
-    Fix all table headers in the document for accessibility.
+    Fix table headers for accessibility.
     Sets first row as header row with proper markup.
     Returns number of tables fixed.
     """
     tables_fixed = 0
-    for table in doc.tables:
+    for table in tables:
         # Set tblHeader on the first row
         header_row = table.rows[0]
         tr = header_row._tr
@@ -456,6 +457,82 @@ def parse_content(content):
     return elements
 
 
+def _looks_like_author_name(text):
+    """Heuristic check for author name lines."""
+    if '@' in text:
+        return False
+    stripped = text.strip()
+    if not stripped or len(stripped) > 80:
+        return False
+    tokens = re.findall(r"[A-Za-z][A-Za-z'`\-\.]*", stripped)
+    if len(tokens) < 2 or len(tokens) > 7:
+        return False
+    return all(t[0].isupper() for t in tokens if t and t[0].isalpha())
+
+
+def _looks_like_email(text):
+    """Heuristic check for email lines."""
+    return bool(re.search(r'[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}', text))
+
+
+def normalize_first_page_author_block(elements):
+    """
+    Detect a first-page stacked author block and convert it to a side-by-side grid.
+    Expected pattern: [Name, Email, Affiliation, Location] repeated.
+    """
+    if not elements:
+        return elements
+
+    title_idx = next((i for i, (t, _) in enumerate(elements) if t == 'h1'), None)
+    if title_idx is None:
+        return elements
+
+    idx = title_idx + 1
+    paragraph_block = []
+    while idx < len(elements) and elements[idx][0] == 'paragraph':
+        paragraph_block.append(elements[idx][1].strip())
+        idx += 1
+
+    if len(paragraph_block) < 8:
+        return elements
+
+    authors = []
+    consumed = 0
+    while consumed + 3 < len(paragraph_block):
+        name = paragraph_block[consumed]
+        email = paragraph_block[consumed + 1]
+        affiliation = paragraph_block[consumed + 2]
+        location = paragraph_block[consumed + 3]
+        if (
+            _looks_like_author_name(name)
+            and _looks_like_email(email)
+            and not _looks_like_email(affiliation)
+            and not _looks_like_email(location)
+        ):
+            authors.append({
+                "name": name,
+                "email": email,
+                "affiliation": affiliation,
+                "location": location,
+            })
+            consumed += 4
+            continue
+        break
+
+    # Only apply if this clearly looks like an author block.
+    if len(authors) < 2:
+        return elements
+    if consumed < len(paragraph_block) - 1:
+        return elements
+
+    rewritten = elements[:title_idx + 1]
+    rewritten.append(('author_grid', authors))
+    for leftover in paragraph_block[consumed:]:
+        rewritten.append(('paragraph', leftover))
+    rewritten.extend(elements[idx:])
+    return rewritten
+
+
 def add_paragraph_with_formatting(doc, text):
     """Add a paragraph with bold/italic text handling."""
     para = doc.add_paragraph()
@@ -474,7 +551,14 @@ def add_paragraph_with_formatting(doc, text):
     return para
 
 
-def create_accessible_docx(md_file, output_file=None, auto_alt=False, alt_model="pixtral-12b"):
+def create_accessible_docx(
+    md_file,
+    output_file=None,
+    auto_alt=False,
+    alt_model="pixtral-12b",
+    preserve_page_breaks=False,
+    use_author_grid=True,
+):
     """Create an accessible Word document from markdown."""
     md_file = Path(md_file)
 
@@ -506,9 +590,12 @@ def create_accessible_docx(md_file, output_file=None, auto_alt=False, alt_model=
 
     image_count = 0
     page_count = 0
+    data_tables = []
 
     for page_num, page_content in enumerate(pages, 1):
         elements = parse_content(page_content)
+        if use_author_grid and page_num == 1:
+            elements = normalize_first_page_author_block(elements)
 
         if not elements:
             continue
@@ -543,6 +630,7 @@ def create_accessible_docx(md_file, output_file=None, auto_alt=False, alt_model=
                     continue
                 num_cols = max(len(r) for r in table_rows)
                 table = doc.add_table(rows=1, cols=num_cols)
+                data_tables.append(table)
                 first_row_cells = table.rows[0].cells
                 for ci in range(num_cols):
                     text = table_rows[0][ci] if ci < len(table_rows[0]) else ''
@@ -553,6 +641,33 @@ def create_accessible_docx(md_file, output_file=None, auto_alt=False, alt_model=
                     for ci in range(num_cols):
                         text = row[ci] if ci < len(row) else ''
                         row_cells[ci].text = text
+
+            elif elem_type == 'author_grid':
+                authors = content
+                if not authors:
+                    continue
+                num_cols = min(3, len(authors))
+                num_rows = math.ceil(len(authors) / num_cols)
+                table = doc.add_table(rows=num_rows, cols=num_cols)
+                table.autofit = True
+
+                for idx, author in enumerate(authors):
+                    row_i = idx // num_cols
+                    col_i = idx % num_cols
+                    cell = table.cell(row_i, col_i)
+                    cell_para = cell.paragraphs[0]
+                    cell_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+                    name_run = cell_para.add_run(author["name"])
+                    name_run.bold = True
+
+                    for field in ("email", "affiliation", "location"):
+                        cell_para.add_run("\n" + author[field])
+
+                for idx in range(len(authors), num_rows * num_cols):
+                    row_i = idx // num_cols
+                    col_i = idx % num_cols
+                    table.cell(row_i, col_i).text = ''
 
             elif elem_type == 'numbered_list':
                 for item in content:
@@ -586,12 +701,12 @@ def create_accessible_docx(md_file, output_file=None, auto_alt=False, alt_model=
                     if add_image_with_alt_text(doc, para, img_path, alt_text):
                         print(f"    Added image: {img_path.name}")
 
-        # Add page break between pages (except last)
-        if has_pages and page_num < len(pages):
+        # Optional: add page break between OCR pages.
+        if preserve_page_breaks and has_pages and page_num < len(pages):
             doc.add_page_break()
 
     # Fix table headers for accessibility
-    tables_fixed = fix_table_headers(doc)
+    tables_fixed = fix_table_headers(data_tables)
 
     # Save document
     doc.save(output_file)
@@ -621,6 +736,16 @@ Examples:
                         help='Disable automatic alt text generation via Mistral API')
     parser.add_argument('--alt-model', default='pixtral-12b',
                         help='Mistral model for alt text generation (default: pixtral-12b)')
+    parser.add_argument(
+        '--preserve-page-breaks',
+        action='store_true',
+        help='Insert DOCX page breaks at OCR page markers (off by default)'
+    )
+    parser.add_argument(
+        '--no-author-grid',
+        action='store_true',
+        help='Disable first-page author block side-by-side layout heuristic'
+    )
 
     args = parser.parse_args()
 
@@ -647,7 +772,14 @@ Examples:
 
         output = args.output if args.output else None
         auto_alt = not args.no_auto_alt
-        create_accessible_docx(md_path, output, auto_alt=auto_alt, alt_model=args.alt_model)
+        create_accessible_docx(
+            md_path,
+            output,
+            auto_alt=auto_alt,
+            alt_model=args.alt_model,
+            preserve_page_breaks=args.preserve_page_breaks,
+            use_author_grid=not args.no_author_grid,
+        )
         print()
 
 
