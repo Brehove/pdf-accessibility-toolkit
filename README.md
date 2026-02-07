@@ -30,6 +30,13 @@ cp .env.example .env
 # edit .env and set MISTRAL_API_KEY
 ```
 
+By default, the scripts look for `.env` in this order:
+1. Path passed with `--env-file`
+2. The input PDF folder (for example, `work/input/.env`)
+3. Your current working directory (for example, repo root)
+4. Skill/script-local `.env`
+5. Existing shell environment variable `MISTRAL_API_KEY`
+
 ### 3. Prepare an input folder
 
 ```bash
@@ -67,7 +74,7 @@ python3 scripts/md_to_accessible_docx.py work/output/*.md --no-author-grid
 
 ## Accessibility QA (Required)
 
-Automated conversion is not sufficient for publishing to students.
+Automated conversion is not sufficient for publishing to students. Documents should be manually verified.
 
 Use:
 - `docs/qa-checklist.md`
