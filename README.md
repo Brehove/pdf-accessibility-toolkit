@@ -2,16 +2,55 @@
 
 Convert scanned or inaccessible PDFs into Word documents with stronger accessibility support for higher-ed workflows.
 
-## What this includes
+## Choose Your Approach First
 
-- OCR PDF -> Markdown (`scripts/mistral_ocr_batch.py`)
-- Markdown -> accessible DOCX (`scripts/md_to_accessible_docx.py`)
-- Table-header repair for existing DOCX (`scripts/fix_docx_table_headers.py`)
-- Isolated batch runner to prevent image filename collisions (`convert_pdfs_isolated.sh`)
-- QA guidance (`docs/`)
-- Optional Codex skill bundle (`skills/codex/higher-ed-pdf-accessibility/`)
+This project supports two ways to run the same conversion pipeline.
 
-## Quick Start
+### Option A: Script-Based Workflow (Default)
+
+Use terminal commands in this repository.
+
+Best for:
+- direct local control
+- repeatable batch runs
+- easier debugging and troubleshooting
+
+### Option B: Codex Skill Workflow (Alternative)
+
+Install the bundled skill so Codex can run the workflow from chat prompts.
+
+Best for:
+- prompt-driven usage in Codex
+- teams already using Codex skills
+
+Important:
+- Both options still require a valid `MISTRAL_API_KEY`.
+- Both options use the same underlying scripts and conversion logic.
+
+## Shared Requirements (Both Options)
+
+You need:
+- Python 3.8+
+- A Mistral API key
+- Local file access to your PDFs
+
+Create your `.env` file with:
+
+```env
+MISTRAL_API_KEY=your_key_here
+```
+
+`.env` lookup order (used by the scripts):
+1. Path passed with `--env-file`
+2. Input PDF folder (for example, `work/input/.env`)
+3. Current working directory (for example, repo root)
+4. Skill/script-local `.env`
+5. Existing shell environment variable `MISTRAL_API_KEY`
+
+Practical default:
+- Put `.env` in the same folder where you run commands (often repo root), or in the input PDF folder.
+
+## Option A (Default): Script-Based Install and Run
 
 ### 1. Install dependencies
 
@@ -21,7 +60,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Set your API key
+### 2. Set up API key
 
 Get a key from [Mistral AI Console](https://console.mistral.ai/api-keys).
 
@@ -30,14 +69,7 @@ cp .env.example .env
 # edit .env and set MISTRAL_API_KEY
 ```
 
-By default, the scripts look for `.env` in this order:
-1. Path passed with `--env-file`
-2. The input PDF folder (for example, `work/input/.env`)
-3. Your current working directory (for example, repo root)
-4. Skill/script-local `.env`
-5. Existing shell environment variable `MISTRAL_API_KEY`
-
-### 3. Prepare an input folder
+### 3. Prepare input PDFs
 
 ```bash
 mkdir -p work/input
@@ -47,14 +79,29 @@ mkdir -p work/input
 ### 4. Run isolated batch conversion (recommended)
 
 ```bash
-# Each PDF is processed in its own folder to avoid image name collisions
 ./convert_pdfs_isolated.sh work/input
 ```
 
-Outputs are written to:
+What this does:
+- Processes each PDF in its own folder (prevents image filename collisions)
+- Runs OCR -> DOCX conversion -> table-header verification per file
+
+### 5. Find outputs
+
+Output root:
+- `work/input/conversion_runs/`
+
+Per-PDF output folder:
 - `work/input/conversion_runs/<pdf-stem>/`
 
-### 5. Legacy shared-output flow (not recommended for mixed/image-heavy batches)
+Typical files per PDF:
+- `<name>.pdf` (copied source)
+- `<name>.md`
+- `<name>.docx`
+- `<name>_accessible.docx`
+- Extracted images (if present)
+
+### Optional: Legacy shared-output flow (not recommended)
 
 ```bash
 mkdir -p work/output
@@ -62,15 +109,55 @@ python3 scripts/mistral_ocr_batch.py --input-dir work/input --output-dir work/ou
 python3 scripts/md_to_accessible_docx.py work/output/*.md
 ```
 
-Optional formatting controls:
+Why not recommended:
+- Image names can collide across documents in one shared folder.
+
+## Option B: Codex Skill Install and Run
+
+### 1. Install the skill package
 
 ```bash
-# Preserve original OCR page boundaries in Word output
-python3 scripts/md_to_accessible_docx.py work/output/*.md --preserve-page-breaks
-
-# Disable first-page author side-by-side normalization
-python3 scripts/md_to_accessible_docx.py work/output/*.md --no-author-grid
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+cp -R skills/codex/higher-ed-pdf-accessibility "${CODEX_HOME:-$HOME/.codex}/skills/"
 ```
+
+Installed skill contents:
+- `SKILL.md` (workflow instructions)
+- `scripts/` (conversion scripts)
+- `references/` (QA docs)
+- `agents/` (support docs)
+
+### 2. Keep using `.env` and dependencies
+
+Even with skills, you still need:
+- Python dependencies available in the runtime environment
+- `MISTRAL_API_KEY` via `.env`, `--env-file`, or shell environment
+- Input PDFs in a folder you specify
+
+### 3. Run via Codex prompt
+
+In Codex, ask to use `higher-ed-pdf-accessibility` on your target folder.
+
+Example intent:
+- “Use the accessibility skill to batch convert PDFs in `work/input`.”
+
+### 4. What the rest of this repo is still for
+
+Even if you use only the installed skill package, the root repo is still useful for:
+- local script testing
+- troubleshooting and debugging
+- manual QA guidance in `docs/`
+
+## What Each Script Does
+
+- `scripts/mistral_ocr_batch.py`
+  - Converts PDF pages to Markdown via Mistral OCR
+- `scripts/md_to_accessible_docx.py`
+  - Converts Markdown structure into accessible Word structure
+- `scripts/fix_docx_table_headers.py`
+  - Ensures table headers are marked for assistive technologies
+- `convert_pdfs_isolated.sh`
+  - Orchestrates the full pipeline one PDF per folder
 
 ## Accessibility QA (Required)
 
@@ -81,25 +168,27 @@ Use:
 - `docs/alt-text-guidance.md`
 - `docs/long-document-handling.md`
 
-## Optional: Use as a Codex Skill
+Minimum manual checks:
+- Heading hierarchy is logical
+- Table headers are correct
+- Alt text quality is meaningful
+- Reading order is understandable
 
-This repo includes an optional skill package in:
-- `skills/codex/higher-ed-pdf-accessibility/`
+## Troubleshooting
 
-To install into Codex:
+Common issues:
+- `MISTRAL_API_KEY environment variable not set`
+  - Verify `.env` location or pass `--env-file`.
+- `No PDFs found`
+  - Confirm files end in `.pdf`/`.PDF` and are in the expected input folder.
+- API/network failures
+  - Re-run failed files individually; long documents may need retries.
 
-```bash
-mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-cp -R skills/codex/higher-ed-pdf-accessibility "${CODEX_HOME:-$HOME/.codex}/skills/"
-```
-
-Then use the skill name `higher-ed-pdf-accessibility` in your Codex workflow.
-
-## Notes and limits
+## Notes and Limits
 
 - OCR quality controls output quality.
 - Complex layouts (dense math, multi-column pages, complex tables) still need manual review.
-- API/network failures should be retried file-by-file for long documents.
+- This tool accelerates remediation; it does not replace human accessibility review.
 
 ## License
 
