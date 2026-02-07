@@ -35,28 +35,23 @@ Set the skill directory once:
 SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/higher-ed-pdf-accessibility"
 ```
 
-Run OCR on PDFs in current folder:
+Recommended default: process each PDF in its own folder (prevents image filename collisions):
+```bash
+"$SKILL_DIR/scripts/convert_pdfs_isolated.sh" .
+```
+
+Optional: use a specific output root and `.env`:
+```bash
+"$SKILL_DIR/scripts/convert_pdfs_isolated.sh" . "./conversion_runs" --env-file "/path/to/.env"
+```
+
+Legacy shared-folder flow (not recommended for mixed/image-heavy batches):
 ```bash
 uv run --with mistralai --with python-dotenv --with python-docx \
   python3 "$SKILL_DIR/scripts/mistral_ocr_batch.py" --input-dir . --output-dir .
-```
 
-Optional: point to a specific `.env`:
-```bash
-uv run --with mistralai --with python-dotenv --with python-docx \
-  python3 "$SKILL_DIR/scripts/mistral_ocr_batch.py" --input-dir . --output-dir . --env-file "/path/to/.env"
-```
-
-Convert Markdown files to accessible DOCX:
-```bash
 uv run --with mistralai --with python-dotenv --with python-docx \
   python3 "$SKILL_DIR/scripts/md_to_accessible_docx.py" *.md
-```
-
-Optional: point DOCX conversion to a specific `.env`:
-```bash
-uv run --with mistralai --with python-dotenv --with python-docx \
-  python3 "$SKILL_DIR/scripts/md_to_accessible_docx.py" *.md --env-file "/path/to/.env"
 ```
 
 Optional: disable auto alt-text generation:
@@ -93,8 +88,11 @@ uv run --with python-docx \
 - Use `references/alt-text-guidance.md` when generated alt text is weak.
 
 ## Output expectations
+- Recommended default output is isolated per PDF under:
+  - `conversion_runs/<pdf-name>/`
 - Each input PDF should produce:
   - `<name>.md`
   - `<name>.docx`
-  - extracted images under `extracted_images/` when needed
+  - `<name>_accessible.docx` after table-header verification
+  - extracted images in the same per-PDF run folder
 - Report failed files separately and continue processing remaining files.
