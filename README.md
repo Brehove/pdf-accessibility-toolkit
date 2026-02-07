@@ -100,11 +100,11 @@ Typical files per PDF:
 
 Before (source PDF in Acrobat with accessibility issues):
 
-![Before conversion: PDF accessibility checker with issues](docs/images/pdf-before-acrobat-accessibility-checker.png)
+![Before conversion: source PDF accessibility checker with issues](docs/images/before-original-pdf-accessibility-checker.png)
 
 After (converted DOCX in Word accessibility assistant):
 
-![After conversion: DOCX accessibility assistant review](docs/images/docx-after-word-accessibility-assistant.png)
+![After conversion: converted DOCX accessibility assistant review](docs/images/after-converted-docx-accessibility-assistant.png)
 
 ## Repository Layout
 
