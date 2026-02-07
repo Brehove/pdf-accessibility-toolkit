@@ -7,7 +7,6 @@ Convert scanned or inaccessible PDFs into Word documents with stronger accessibi
 - OCR PDF -> Markdown (`scripts/mistral_ocr_batch.py`)
 - Markdown -> accessible DOCX (`scripts/md_to_accessible_docx.py`)
 - Table-header repair for existing DOCX (`scripts/fix_docx_table_headers.py`)
-- Optional PPTX contrast fixer (`scripts/fix_pptx_contrast.py`)
 - QA guidance (`docs/`)
 - Optional Codex skill bundle (`skills/codex/higher-ed-pdf-accessibility/`)
 
