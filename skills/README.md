@@ -1,6 +1,6 @@
 # Skill Bundle
 
-This folder contains an optional Codex skill package.
+This folder contains the primary Codex skill package for this repository.
 
 ## Install
 
@@ -13,5 +13,5 @@ The skill can then be referenced as `higher-ed-pdf-accessibility`.
 
 ## Notes
 
-- The core toolkit in `scripts/` works without any skill system.
-- Keep this folder optional for users who only need the Python CLI workflow.
+- Canonical conversion scripts live in `codex/higher-ed-pdf-accessibility/scripts/`.
+- Canonical skill instructions live in `codex/higher-ed-pdf-accessibility/SKILL.md`.

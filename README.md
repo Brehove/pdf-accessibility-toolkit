@@ -2,35 +2,13 @@
 
 Convert scanned or inaccessible PDFs into Word documents with stronger accessibility support for higher-ed workflows.
 
-## Choose Your Approach First
+This repository is skill-first: the primary distribution is the Codex skill package at `skills/codex/higher-ed-pdf-accessibility`.
 
-This project supports two ways to run the same conversion pipeline.
-
-### Option A: Script-Based Workflow (Default)
-
-Use terminal commands in this repository.
-
-Best for:
-- direct local control
-- repeatable batch runs
-- easier debugging and troubleshooting
-
-### Option B: Codex Skill Workflow (Alternative)
-
-Install the bundled skill so Codex can run the workflow from chat prompts.
-
-Best for:
-- prompt-driven usage in Codex
-- teams already using Codex skills
-
-Important:
-- Both options still require a valid `MISTRAL_API_KEY`.
-- Both options use the same underlying scripts and conversion logic.
-
-## Shared Requirements (Both Options)
+## Requirements
 
 You need:
 - Python 3.8+
+- `uv` (required for the shell runner scripts)
 - A Mistral API key
 - Local file access to your PDFs
 
@@ -43,57 +21,67 @@ MISTRAL_API_KEY=your_key_here
 `.env` lookup order (used by the scripts):
 1. Path passed with `--env-file`
 2. Input PDF folder (for example, `work/input/.env`)
-3. Current working directory (for example, repo root)
-4. Skill/script-local `.env`
+3. Current working directory
+4. Skill-local `.env`
 5. Existing shell environment variable `MISTRAL_API_KEY`
 
-Practical default:
-- Put `.env` in the same folder where you run commands (often repo root), or in the input PDF folder.
+## Install The Skill
 
-## Option A (Default): Script-Based Install and Run
+### Recommended: install from GitHub
 
-### 1. Get the repository
+```bash
+CODEX_HOME="${CODEX_HOME:-$HOME/.codex}" python3 "$HOME/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py" --repo Brehove/pdf-accessibility-toolkit --path skills/codex/higher-ed-pdf-accessibility
+```
+
+Restart Codex after install so the new skill is loaded.
+
+### Alternative: install from a local clone
 
 ```bash
 git clone https://github.com/Brehove/pdf-accessibility-toolkit.git
 cd pdf-accessibility-toolkit
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+cp -R skills/codex/higher-ed-pdf-accessibility "${CODEX_HOME:-$HOME/.codex}/skills/"
 ```
 
-### 2. Install dependencies
+## Run The Workflow
+
+### In Codex (primary)
+
+Ask Codex to use `higher-ed-pdf-accessibility` on your folder.
+
+Example intent:
+- "Use the accessibility skill to batch convert PDFs in `work/input`."
+
+### From terminal (same skill scripts)
+
+Set the installed skill directory:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+SKILL_DIR="${CODEX_HOME:-$HOME/.codex}/skills/higher-ed-pdf-accessibility"
 ```
 
-### 3. Set up API key
-
-Get a key from [Mistral AI Console](https://console.mistral.ai/api-keys).
+Run isolated batch conversion (recommended):
 
 ```bash
-cp .env.example .env
-# edit .env and set MISTRAL_API_KEY
-```
-
-### 4. Prepare input PDFs
-
-```bash
-mkdir -p work/input
-# place PDF files in work/input
-```
-
-### 5. Run isolated batch conversion (recommended)
-
-```bash
-./convert_pdfs_isolated.sh work/input
+"$SKILL_DIR/scripts/convert_pdfs_isolated.sh" work/input
 ```
 
 What this does:
 - Processes each PDF in its own folder (prevents image filename collisions)
 - Runs OCR -> DOCX conversion -> table-header verification per file
 
-### 6. Find outputs
+Optional legacy shared-output flow (not recommended):
+
+```bash
+uv run --with mistralai --with python-dotenv --with python-docx \
+  python3 "$SKILL_DIR/scripts/mistral_ocr_batch.py" --input-dir work/input --output-dir work/output
+
+uv run --with mistralai --with python-dotenv --with python-docx \
+  python3 "$SKILL_DIR/scripts/md_to_accessible_docx.py" work/output/*.md
+```
+
+## Outputs
 
 Output root:
 - `work/input/conversion_runs/`
@@ -106,72 +94,40 @@ Typical files per PDF:
 - `<name>.md`
 - `<name>.docx`
 - `<name>_accessible.docx`
-- Extracted images (if present)
+- extracted images (if present)
 
-### Optional: Legacy shared-output flow (not recommended)
+## Before/After Examples
 
-```bash
-mkdir -p work/output
-python3 scripts/mistral_ocr_batch.py --input-dir work/input --output-dir work/output
-python3 scripts/md_to_accessible_docx.py work/output/*.md
-```
+Before (source PDF in Acrobat with accessibility issues):
 
-Why not recommended:
-- Image names can collide across documents in one shared folder.
+![Before conversion: PDF accessibility checker with issues](docs/images/pdf-before-acrobat-accessibility-checker.png)
 
-## Option B: Codex Skill Install and Run
+After (converted DOCX in Word accessibility assistant):
 
-### 1. Install the skill package
+![After conversion: DOCX accessibility assistant review](docs/images/docx-after-word-accessibility-assistant.png)
 
-```bash
-mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
-cp -R skills/codex/higher-ed-pdf-accessibility "${CODEX_HOME:-$HOME/.codex}/skills/"
-```
+## Repository Layout
 
-Or install directly from GitHub (recommended for clean/new-user testing):
+Primary skill package:
+- `skills/codex/higher-ed-pdf-accessibility/SKILL.md`
+- `skills/codex/higher-ed-pdf-accessibility/scripts/`
+- `skills/codex/higher-ed-pdf-accessibility/references/`
+- `skills/codex/higher-ed-pdf-accessibility/agents/`
 
-```bash
-CODEX_HOME="${CODEX_HOME:-$HOME/.codex}" python3 "$HOME/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py" --repo Brehove/pdf-accessibility-toolkit --path skills/codex/higher-ed-pdf-accessibility
-```
+Shared documentation:
+- `docs/qa-checklist.md`
+- `docs/alt-text-guidance.md`
+- `docs/long-document-handling.md`
 
-After installing, restart Codex so new skills are loaded.
+## Script Reference (Skill Package)
 
-Installed skill contents:
-- `SKILL.md` (workflow instructions)
-- `scripts/` (conversion scripts)
-- `references/` (QA docs)
-- `agents/` (support docs)
-
-### 2. Keep using `.env` and dependencies
-
-Even with skills, you still need:
-- Python dependencies available in the runtime environment
-- `MISTRAL_API_KEY` via `.env`, `--env-file`, or shell environment
-- Input PDFs in a folder you specify
-
-### 3. Run via Codex prompt
-
-In Codex, ask to use `higher-ed-pdf-accessibility` on your target folder.
-
-Example intent:
-- “Use the accessibility skill to batch convert PDFs in `work/input`.”
-
-### 4. What the rest of this repo is still for
-
-Even if you use only the installed skill package, the root repo is still useful for:
-- local script testing
-- troubleshooting and debugging
-- manual QA guidance in `docs/`
-
-## What Each Script Does
-
-- `scripts/mistral_ocr_batch.py`
+- `skills/codex/higher-ed-pdf-accessibility/scripts/mistral_ocr_batch.py`
   - Converts PDF pages to Markdown via Mistral OCR
-- `scripts/md_to_accessible_docx.py`
+- `skills/codex/higher-ed-pdf-accessibility/scripts/md_to_accessible_docx.py`
   - Converts Markdown structure into accessible Word structure
-- `scripts/fix_docx_table_headers.py`
+- `skills/codex/higher-ed-pdf-accessibility/scripts/fix_docx_table_headers.py`
   - Ensures table headers are marked for assistive technologies
-- `convert_pdfs_isolated.sh`
+- `skills/codex/higher-ed-pdf-accessibility/scripts/convert_pdfs_isolated.sh`
   - Orchestrates the full pipeline one PDF per folder
 
 ## Accessibility QA (Required)

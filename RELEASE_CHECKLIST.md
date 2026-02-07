@@ -25,9 +25,10 @@ grep -R -n "MISTRAL_API_KEY\|sk-" . || true
 - [ ] CLI help checks:
 
 ```bash
-uv run --with mistralai --with python-dotenv python3 scripts/mistral_ocr_batch.py -h
-uv run --with python-docx --with python-dotenv --with mistralai python3 scripts/md_to_accessible_docx.py -h
-uv run --with python-docx python3 scripts/fix_docx_table_headers.py -h
+SCRIPT_DIR="skills/codex/higher-ed-pdf-accessibility/scripts"
+uv run --with mistralai --with python-dotenv python3 "$SCRIPT_DIR/mistral_ocr_batch.py" -h
+uv run --with python-docx --with python-dotenv --with mistralai python3 "$SCRIPT_DIR/md_to_accessible_docx.py" -h
+uv run --with python-docx python3 "$SCRIPT_DIR/fix_docx_table_headers.py" -h
 ```
 
 - [ ] Optional end-to-end test with a small sample PDF (non-sensitive).
@@ -39,7 +40,7 @@ uv run --with python-docx python3 scripts/fix_docx_table_headers.py -h
 - [ ] `LICENSE` present.
 - [ ] `CONTRIBUTING.md` present.
 - [ ] `requirements.txt` up to date.
-- [ ] Optional skill docs under `skills/` are accurate.
+- [ ] Skill docs and scripts under `skills/` are accurate.
 
 ## 4) GitHub publish steps
 
@@ -70,7 +71,7 @@ git push origin v0.1.0
 - Overview of OCR -> Markdown -> DOCX workflow
 - Known limitations (complex tables/layout/math)
 - QA requirement reminder
-- Skill bundle is optional
+- Skill package install path for Codex users
 
 ## 6) Post-release housekeeping
 
