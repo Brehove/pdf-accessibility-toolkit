@@ -187,6 +187,31 @@ def is_placeholder_alt_text(alt_text, image_ref):
     return False
 
 
+def caption_to_alt_text(text, max_len=120):
+    """Convert a figure caption line into concise alt text."""
+    cleaned = re.sub(r'\s+', ' ', (text or "")).strip()
+    if not cleaned:
+        return None
+    cleaned = re.sub(r'^(figure|fig\.?)\s*\d*[:.\-]\s*', '', cleaned, flags=re.IGNORECASE)
+    cleaned = cleaned.strip()
+    if not cleaned:
+        return None
+    return cleaned[:max_len]
+
+
+def get_following_figure_caption(elements, index):
+    """Return next paragraph if it looks like a figure caption."""
+    if index + 1 >= len(elements):
+        return None
+    next_type, next_content = elements[index + 1]
+    if next_type != "paragraph":
+        return None
+    line = (next_content or "").strip()
+    if re.match(r'^(figure|fig\.?)\s*\d*[:.\-]\s+', line, flags=re.IGNORECASE):
+        return line
+    return None
+
+
 def get_mistral_client():
     api_key = os.environ.get("MISTRAL_API_KEY")
     if not api_key:
@@ -605,7 +630,7 @@ def create_accessible_docx(
             print(f"  Processing page {page_num}...")
 
         # Process each element
-        for elem_type, content in elements:
+        for elem_index, (elem_type, content) in enumerate(elements):
             if elem_type == 'h1':
                 heading = doc.add_heading(content, level=1)
                 for run in heading.runs:
@@ -688,12 +713,18 @@ def create_accessible_docx(
                 img_path = find_image_path(img_ref, md_file) if img_ref else None
                 if img_path:
                     image_count += 1
-                    alt_text = alt_from_md if alt_from_md else get_alt_text(img_ref)
-                    should_generate = auto_alt and is_placeholder_alt_text(alt_from_md, img_ref)
+                    is_placeholder = is_placeholder_alt_text(alt_from_md, img_ref)
+                    alt_text = alt_from_md if alt_from_md and not is_placeholder else None
+                    should_generate = auto_alt and is_placeholder
                     if should_generate:
                         generated_alt = generate_alt_text_mistral(img_path, alt_model)
                         if generated_alt:
                             alt_text = generated_alt
+                    if not alt_text:
+                        caption = get_following_figure_caption(elements, elem_index)
+                        alt_text = caption_to_alt_text(caption)
+                    if not alt_text:
+                        alt_text = get_alt_text(img_ref)
 
                     para = doc.add_paragraph()
                     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
