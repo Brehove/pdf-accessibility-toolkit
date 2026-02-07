@@ -103,23 +103,36 @@ for pdf in "${pdfs[@]}"; do
   mkdir -p "$run_dir"
   cp -f "$pdf" "$run_dir/$name"
 
-  env_arg=()
   if [[ -n "$ENV_FILE" ]]; then
-    env_arg=(--env-file "$ENV_FILE")
+    if ! uv run --with mistralai --with python-dotenv --with python-docx \
+        python3 "$OCR_SCRIPT" --input-dir "$run_dir" --output-dir "$run_dir" --env-file "$ENV_FILE"; then
+      echo "Failed OCR: $name" >&2
+      ((fail+=1))
+      continue
+    fi
+  else
+    if ! uv run --with mistralai --with python-dotenv --with python-docx \
+        python3 "$OCR_SCRIPT" --input-dir "$run_dir" --output-dir "$run_dir"; then
+      echo "Failed OCR: $name" >&2
+      ((fail+=1))
+      continue
+    fi
   fi
 
-  if ! uv run --with mistralai --with python-dotenv --with python-docx \
-      python3 "$OCR_SCRIPT" --input-dir "$run_dir" --output-dir "$run_dir" "${env_arg[@]}"; then
-    echo "Failed OCR: $name" >&2
-    ((fail+=1))
-    continue
-  fi
-
-  if ! uv run --with mistralai --with python-dotenv --with python-docx \
-      python3 "$DOCX_SCRIPT" "$run_dir"/*.md "${env_arg[@]}"; then
-    echo "Failed DOCX conversion: $name" >&2
-    ((fail+=1))
-    continue
+  if [[ -n "$ENV_FILE" ]]; then
+    if ! uv run --with mistralai --with python-dotenv --with python-docx \
+        python3 "$DOCX_SCRIPT" "$run_dir"/*.md --env-file "$ENV_FILE"; then
+      echo "Failed DOCX conversion: $name" >&2
+      ((fail+=1))
+      continue
+    fi
+  else
+    if ! uv run --with mistralai --with python-dotenv --with python-docx \
+        python3 "$DOCX_SCRIPT" "$run_dir"/*.md; then
+      echo "Failed DOCX conversion: $name" >&2
+      ((fail+=1))
+      continue
+    fi
   fi
 
   if ! uv run --with python-docx \
