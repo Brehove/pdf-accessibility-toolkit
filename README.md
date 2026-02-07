@@ -52,7 +52,14 @@ Practical default:
 
 ## Option A (Default): Script-Based Install and Run
 
-### 1. Install dependencies
+### 1. Get the repository
+
+```bash
+git clone https://github.com/Brehove/pdf-accessibility-toolkit.git
+cd pdf-accessibility-toolkit
+```
+
+### 2. Install dependencies
 
 ```bash
 python3 -m venv .venv
@@ -60,7 +67,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Set up API key
+### 3. Set up API key
 
 Get a key from [Mistral AI Console](https://console.mistral.ai/api-keys).
 
@@ -69,14 +76,14 @@ cp .env.example .env
 # edit .env and set MISTRAL_API_KEY
 ```
 
-### 3. Prepare input PDFs
+### 4. Prepare input PDFs
 
 ```bash
 mkdir -p work/input
 # place PDF files in work/input
 ```
 
-### 4. Run isolated batch conversion (recommended)
+### 5. Run isolated batch conversion (recommended)
 
 ```bash
 ./convert_pdfs_isolated.sh work/input
@@ -86,7 +93,7 @@ What this does:
 - Processes each PDF in its own folder (prevents image filename collisions)
 - Runs OCR -> DOCX conversion -> table-header verification per file
 
-### 5. Find outputs
+### 6. Find outputs
 
 Output root:
 - `work/input/conversion_runs/`
@@ -120,6 +127,14 @@ Why not recommended:
 mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
 cp -R skills/codex/higher-ed-pdf-accessibility "${CODEX_HOME:-$HOME/.codex}/skills/"
 ```
+
+Or install directly from GitHub (recommended for clean/new-user testing):
+
+```bash
+CODEX_HOME="${CODEX_HOME:-$HOME/.codex}" python3 "$HOME/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py" --repo Brehove/pdf-accessibility-toolkit --path skills/codex/higher-ed-pdf-accessibility
+```
+
+After installing, restart Codex so new skills are loaded.
 
 Installed skill contents:
 - `SKILL.md` (workflow instructions)
