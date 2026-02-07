@@ -7,6 +7,7 @@ Convert scanned or inaccessible PDFs into Word documents with stronger accessibi
 - OCR PDF -> Markdown (`scripts/mistral_ocr_batch.py`)
 - Markdown -> accessible DOCX (`scripts/md_to_accessible_docx.py`)
 - Table-header repair for existing DOCX (`scripts/fix_docx_table_headers.py`)
+- Isolated batch runner to prevent image filename collisions (`convert_pdfs_isolated.sh`)
 - QA guidance (`docs/`)
 - Optional Codex skill bundle (`skills/codex/higher-ed-pdf-accessibility/`)
 
@@ -29,22 +30,28 @@ cp .env.example .env
 # edit .env and set MISTRAL_API_KEY
 ```
 
-### 3. Prepare input/output folders
+### 3. Prepare an input folder
 
 ```bash
-mkdir -p work/input work/output
+mkdir -p work/input
 # place PDF files in work/input
 ```
 
-### 4. Run OCR (PDF -> Markdown + images)
+### 4. Run isolated batch conversion (recommended)
 
 ```bash
-python3 scripts/mistral_ocr_batch.py --input-dir work/input --output-dir work/output
+# Each PDF is processed in its own folder to avoid image name collisions
+./convert_pdfs_isolated.sh work/input
 ```
 
-### 5. Convert Markdown to DOCX
+Outputs are written to:
+- `work/input/conversion_runs/<pdf-stem>/`
+
+### 5. Legacy shared-output flow (not recommended for mixed/image-heavy batches)
 
 ```bash
+mkdir -p work/output
+python3 scripts/mistral_ocr_batch.py --input-dir work/input --output-dir work/output
 python3 scripts/md_to_accessible_docx.py work/output/*.md
 ```
 
