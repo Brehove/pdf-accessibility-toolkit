@@ -2,6 +2,12 @@
 
 Convert scanned or inaccessible PDFs into Word documents with stronger accessibility support for higher-ed workflows.
 
+This skill is designed to fill a practical gap: large files, large batches, and complex document structures (especially tables and images) that are hard to remediate reliably with general chat tools alone.
+
+NotebookLM, ChatGPT, and similar platforms can be useful for smaller, simpler PDFs, but they are not optimized for high-volume conversion workflows or consistent handling of complex layouts across many files. This toolkit provides a repeatable pipeline for those harder cases.
+
+For institutions handling FERPA-protected documents, the same workflow can be adapted to use an enterprise-approved model provider instead of Mistral (for example, AWS-hosted OCR models under an institutional agreement) by swapping the model API integration in the scripts.
+
 This repository is skill-first: the primary distribution is the Codex skill package at `skills/codex/higher-ed-pdf-accessibility`.
 
 ## Requirements
@@ -24,6 +30,37 @@ MISTRAL_API_KEY=your_key_here
 3. Current working directory
 4. Skill-local `.env`
 5. Existing shell environment variable `MISTRAL_API_KEY`
+
+## Easiest Setup In Codex (No GitHub Commands)
+
+Use this if you are comfortable with Codex but do not want to use `git` commands.
+
+1. Create a working folder on your computer.
+2. Put your PDF files in that folder.
+3. In that same folder, create a file named `.env` with:
+
+```env
+MISTRAL_API_KEY=your_key_here
+```
+
+4. Open Codex with that working folder as the current folder/workspace.
+5. Paste this prompt to install the skill from GitHub:
+
+```text
+Install the Codex skill from:
+https://github.com/Brehove/pdf-accessibility-toolkit
+Use this skill path:
+skills/codex/higher-ed-pdf-accessibility
+```
+
+6. Then paste this prompt to run conversion in the current folder:
+
+```text
+Use the higher-ed-pdf-accessibility skill to batch-convert all PDFs in this current folder.
+Use the .env file in this folder for MISTRAL_API_KEY.
+```
+
+7. If Codex says the new skill is not loaded yet, restart Codex once and run step 6 again.
 
 ## Install The Skill
 
