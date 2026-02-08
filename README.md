@@ -10,6 +10,18 @@ For institutions handling FERPA-protected documents, the same workflow can be ad
 
 This repository is skill-first: the primary distribution is the Codex skill package at `skills/codex/higher-ed-pdf-accessibility`.
 
+## Report Bugs Or Request Features
+
+Use GitHub Issues so reports route directly to the maintainer account:
+- Issues: https://github.com/Brehove/pdf-accessibility-toolkit/issues
+- New issue: https://github.com/Brehove/pdf-accessibility-toolkit/issues/new
+
+Include:
+- What you ran
+- What you expected
+- What happened (error text/screenshots)
+- Sample file details (without sensitive student data)
+
 ## Requirements
 
 You need:
