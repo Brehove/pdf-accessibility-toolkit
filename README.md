@@ -2,7 +2,7 @@
 
 Convert scanned or inaccessible PDFs into Word documents with stronger accessibility support for higher-ed workflows.
 
-This skill is designed to fill a practical gap: large files, large batches, and complex document structures (especially tables and images) that are hard to remediate reliably with general chat tools alone.
+This skill is designed to fill a practical gap: large files, large batches, and complex document structures (especially tables and images) that are hard to remediate reliably with general chat tools alone. It also auto-generates draft alt text for images during conversion.
 
 NotebookLM, ChatGPT, and similar platforms can be useful for smaller, simpler PDFs, but they are not optimized for high-volume conversion workflows or consistent handling of complex layouts across many files. This toolkit provides a repeatable pipeline for those harder cases.
 
@@ -107,6 +107,7 @@ Run isolated batch conversion (recommended):
 What this does:
 - Processes each PDF in its own folder (prevents image filename collisions)
 - Runs OCR -> DOCX conversion -> table-header verification per file
+- Auto-generates draft image alt text by default (can be disabled with `--no-auto-alt`)
 
 Optional legacy shared-output flow (not recommended):
 
