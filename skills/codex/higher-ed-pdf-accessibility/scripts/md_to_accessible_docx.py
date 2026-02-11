@@ -187,7 +187,7 @@ def is_placeholder_alt_text(alt_text, image_ref):
     return False
 
 
-def caption_to_alt_text(text, max_len=120):
+def caption_to_alt_text(text):
     """Convert a figure caption line into concise alt text."""
     cleaned = re.sub(r'\s+', ' ', (text or "")).strip()
     if not cleaned:
@@ -196,7 +196,7 @@ def caption_to_alt_text(text, max_len=120):
     cleaned = cleaned.strip()
     if not cleaned:
         return None
-    return cleaned[:max_len]
+    return cleaned
 
 
 def get_following_figure_caption(elements, index):
@@ -234,7 +234,7 @@ def generate_alt_text_mistral(image_path, model):
         data_url = f"data:image/{ext};base64,{base64.b64encode(image_bytes).decode('utf-8')}"
         prompt = (
             "Write concise, descriptive accessibility alt text for this image. "
-            "Limit to 120 characters. No quotes."
+            "Use 1-2 detailed sentences. No quotes."
         )
         response = client.chat.complete(
             model=model,
@@ -250,7 +250,7 @@ def generate_alt_text_mistral(image_path, model):
         if isinstance(content, list):
             content = " ".join(part.get("text", "") for part in content if isinstance(part, dict))
         alt = (content or "").strip().replace("\n", " ")
-        alt_final = alt[:120] if alt else None
+        alt_final = alt or None
         return alt_final
     except Exception:
         return None
@@ -277,8 +277,8 @@ def add_image_with_alt_text(doc, paragraph, image_path, alt_text, width=Inches(5
     # Add alt text to the image
     inline = picture._inline
     doc_pr = inline.docPr
-    doc_pr.set('descr', alt_text)
-    doc_pr.set('title', alt_text[:50] + "..." if len(alt_text) > 50 else alt_text)
+    doc_pr.set('descr', alt_text or "")
+    doc_pr.set('title', "")
 
     return True
 
@@ -630,7 +630,10 @@ def create_accessible_docx(
             print(f"  Processing page {page_num}...")
 
         # Process each element
+        skip_indices = set()
         for elem_index, (elem_type, content) in enumerate(elements):
+            if elem_index in skip_indices:
+                continue
             if elem_type == 'h1':
                 heading = doc.add_heading(content, level=1)
                 for run in heading.runs:
@@ -723,6 +726,8 @@ def create_accessible_docx(
                     if not alt_text:
                         caption = get_following_figure_caption(elements, elem_index)
                         alt_text = caption_to_alt_text(caption)
+                        if alt_text:
+                            skip_indices.add(elem_index + 1)
                     if not alt_text:
                         alt_text = get_alt_text(img_ref)
 

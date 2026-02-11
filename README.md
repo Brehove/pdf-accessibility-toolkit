@@ -8,7 +8,11 @@ NotebookLM, ChatGPT, and similar platforms can be useful for smaller, simpler PD
 
 For institutions handling FERPA-protected documents, the same workflow can be adapted to use an enterprise-approved model provider instead of Mistral (for example, AWS-hosted OCR models under an institutional agreement) by swapping the model API integration in the scripts.
 
-This repository is skill-first: the primary distribution is the Codex skill package at `skills/codex/higher-ed-pdf-accessibility`.
+This repository is skill-first: the source skill package in this repo lives at `skills/codex/higher-ed-pdf-accessibility`.
+
+Installed skill locations:
+- Codex: `${CODEX_HOME:-$HOME/.codex}/skills/higher-ed-pdf-accessibility`
+- Claude Code: `~/.claude/skills/higher-ed-pdf-accessibility`
 
 ## Report Bugs Or Request Features
 
@@ -25,7 +29,7 @@ Include:
 ## Requirements
 
 You need:
-- Python 3.8+
+- Python 3.9+
 - `uv` (required for the shell runner scripts)
 - A Mistral API key
 - Local file access to your PDFs
@@ -63,6 +67,10 @@ Install the Codex skill from:
 https://github.com/Brehove/pdf-accessibility-toolkit
 Use this skill path:
 skills/codex/higher-ed-pdf-accessibility
+Use install name:
+higher-ed-pdf-accessibility
+so it lands at:
+~/.codex/skills/higher-ed-pdf-accessibility
 ```
 
 6. Then paste this prompt to run conversion in the current folder:
@@ -79,7 +87,8 @@ Use the .env file in this folder for MISTRAL_API_KEY.
 ### Recommended: install from GitHub
 
 ```bash
-CODEX_HOME="${CODEX_HOME:-$HOME/.codex}" python3 "$HOME/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py" --repo Brehove/pdf-accessibility-toolkit --path skills/codex/higher-ed-pdf-accessibility
+CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+python3 "$CODEX_HOME/skills/.system/skill-installer/scripts/install-skill-from-github.py" --repo Brehove/pdf-accessibility-toolkit --path skills/codex/higher-ed-pdf-accessibility --name higher-ed-pdf-accessibility
 ```
 
 Restart Codex after install so the new skill is loaded.
@@ -91,6 +100,15 @@ git clone https://github.com/Brehove/pdf-accessibility-toolkit.git
 cd pdf-accessibility-toolkit
 mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
 cp -R skills/codex/higher-ed-pdf-accessibility "${CODEX_HOME:-$HOME/.codex}/skills/"
+```
+
+### Using Claude Code instead of Codex
+
+```bash
+git clone https://github.com/Brehove/pdf-accessibility-toolkit.git
+cd pdf-accessibility-toolkit
+mkdir -p "$HOME/.claude/skills"
+cp -R skills/codex/higher-ed-pdf-accessibility "$HOME/.claude/skills/"
 ```
 
 ## Run The Workflow
@@ -143,7 +161,6 @@ Typical files per PDF:
 - `<name>.pdf` (copied source)
 - `<name>.md`
 - `<name>.docx`
-- `<name>_accessible.docx`
 - extracted images (if present)
 
 ## Before/After Examples
